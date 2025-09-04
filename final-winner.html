@@ -1,0 +1,2022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reddit Karma Rush - The Ultimate Experience</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#FF4500">
+    
+    <!-- Three.js for 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        body {
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        /* STUNNING UI OVERLAY */
+        .game-hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* KARMA COUNTER WITH ANIMATION */
+        .karma-display {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            animation: glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 69, 0, 0.8)); }
+            50% { filter: drop-shadow(0 0 40px rgba(255, 69, 0, 1)); }
+        }
+        
+        .karma-score {
+            font-size: 72px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #FF4500, #FFD700, #FF4500);
+            background-size: 200% 200%;
+            animation: gradient 3s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 4px;
+            margin: 0;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .karma-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-top: -5px;
+        }
+        
+        /* ACHIEVEMENT POPUP */
+        .achievement {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.9), rgba(255, 69, 0, 0.9));
+            padding: 15px 30px;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            animation: achievementPop 0.5s ease;
+        }
+        
+        .achievement.show {
+            display: block;
+        }
+        
+        @keyframes achievementPop {
+            0% { transform: translateX(-50%) scale(0) rotate(0deg); }
+            50% { transform: translateX(-50%) scale(1.2) rotate(5deg); }
+            100% { transform: translateX(-50%) scale(1) rotate(0deg); }
+        }
+        
+        /* MULTIPLIER SYSTEM */
+        .multiplier {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            font-weight: bold;
+            color: #FFD700;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+        }
+        
+        .multiplier.mega {
+            animation: pulse-mega 0.5s ease infinite;
+            color: #00FF00;
+        }
+        
+        @keyframes pulse-mega {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.3); }
+        }
+        
+        /* DIMENSION INDICATOR */
+        .dimension-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #FF4500;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dimension-display:hover {
+            background: rgba(255, 69, 0, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .dimension-name {
+            font-size: 18px;
+            color: #FFD700;
+        }
+        
+        /* COMBO METER */
+        .combo-meter {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 30px;
+            background: rgba(0,0,0,0.7);
+            border: 3px solid #FF4500;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .combo-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #FF4500, #FFD700, #00FF00);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 20px currentColor;
+        }
+        
+        .combo-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        }
+        
+        /* LEADERBOARD */
+        .leaderboard {
+            position: absolute;
+            left: 20px;
+            top: 100px;
+            width: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FFD700;
+            border-radius: 15px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .leaderboard-title {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .leaderboard-item {
+            color: white;
+            font-size: 12px;
+            padding: 5px;
+            margin: 3px 0;
+            background: rgba(255, 69, 0, 0.2);
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .leaderboard-item.you {
+            background: rgba(255, 215, 0, 0.3);
+            border: 1px solid #FFD700;
+        }
+        
+        /* LIVE REDDIT FEED */
+        .reddit-live-feed {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            max-height: 400px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FF4500;
+            border-radius: 15px;
+            padding: 15px;
+            overflow-y: auto;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+        }
+        
+        .feed-title {
+            color: #FF4500;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .feed-item {
+            color: white;
+            font-size: 11px;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255, 69, 0, 0.2);
+            border-radius: 8px;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { 
+                transform: translateX(100%); 
+                opacity: 0;
+            }
+            to { 
+                transform: translateX(0); 
+                opacity: 1;
+            }
+        }
+        
+        /* DAILY CHALLENGE */
+        .daily-challenge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.8), rgba(255, 140, 0, 0.8));
+            border: 2px solid #FFD700;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 1); }
+        }
+        
+        /* START SCREEN */
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, #764ba2, #667eea);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .start-screen.hidden {
+            opacity: 0;
+            transform: scale(1.2);
+            pointer-events: none;
+        }
+        
+        .game-logo {
+            width: 150px;
+            height: 150px;
+            background: linear-gradient(135deg, #FF4500, #FF8C00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 60px rgba(255, 69, 0, 0.6);
+            animation: float-logo 3s ease-in-out infinite;
+        }
+        
+        @keyframes float-logo {
+            0%, 100% { transform: translateY(0) rotateZ(0deg); }
+            50% { transform: translateY(-20px) rotateZ(5deg); }
+        }
+        
+        .game-title {
+            font-size: 52px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .game-subtitle {
+            font-size: 20px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 50px;
+        }
+        
+        .play-button {
+            padding: 25px 70px;
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #FF4500, #FF6B35);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 15px 40px rgba(255, 69, 0, 0.5);
+            transition: all 0.3s ease;
+            animation: pulse-button 2s infinite;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+        
+        @keyframes pulse-button {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .play-button:active {
+            transform: scale(0.95);
+        }
+        
+        /* MUSIC CONTROLS */
+        .music-control {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #FF4500;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 101;
+        }
+        
+        .music-control:hover {
+            background: rgba(255, 69, 0, 0.3);
+        }
+        
+        /* POWERUP NOTIFICATIONS */
+        .powerup-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: 900;
+            color: #FFD700;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.9);
+            animation: powerup-anim 1.5s ease;
+            pointer-events: none;
+            z-index: 200;
+        }
+        
+        @keyframes powerup-anim {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.5) rotate(180deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -100%) scale(1) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* SPECIAL EFFECTS */
+        .screen-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 150;
+        }
+        
+        .screen-flash.active {
+            animation: flash 0.3s ease;
+        }
+        
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+        
+        /* MOBILE CONTROLS */
+        .mobile-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+            z-index: 101;
+        }
+        
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 69, 0, 0.3);
+            border: 3px solid #FF4500;
+            border-radius: 50%;
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-btn:active {
+            background: rgba(255, 69, 0, 0.6);
+            transform: scale(0.95);
+        }
+        
+        /* STATS DISPLAY */
+        .stats-display {
+            position: absolute;
+            left: 20px;
+            bottom: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FF4500;
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-item {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            min-width: 150px;
+        }
+        
+        .stat-label {
+            color: #FFD700;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- START SCREEN -->
+    <div id="startScreen" class="start-screen">
+        <div class="game-logo">🚀</div>
+        <h1 class="game-title">KARMA RUSH</h1>
+        <p class="game-subtitle">Reddit Multiverse Ultimate</p>
+        <button class="play-button" onclick="initGame()">PLAY NOW</button>
+    </div>
+    
+    <!-- GAME HUD -->
+    <div class="game-hud">
+        <div class="karma-display">
+            <h1 class="karma-score" id="karmaScore">0</h1>
+            <div class="karma-label">KARMA POINTS</div>
+        </div>
+        
+        <div class="achievement" id="achievement"></div>
+        
+        <div class="multiplier" id="multiplier">1.0x</div>
+        
+        <div class="dimension-display" onclick="switchDimension()">
+            <div>DIMENSION</div>
+            <div class="dimension-name" id="dimensionName">r/all</div>
+        </div>
+        
+        <div class="daily-challenge">
+            <div>🏆 DAILY: Collect 10 Awards</div>
+        </div>
+        
+        <div class="leaderboard">
+            <div class="leaderboard-title">🏆 Top Players</div>
+            <div id="leaderboardContent"></div>
+        </div>
+        
+        <div class="combo-meter">
+            <div class="combo-fill" id="comboFill"></div>
+            <div class="combo-text" id="comboText">COMBO: 0</div>
+        </div>
+        
+        <div class="reddit-live-feed">
+            <div class="feed-title">🔴 LIVE REDDIT</div>
+            <div id="feedContent"></div>
+        </div>
+        
+        <div class="stats-display">
+            <div class="stat-item">
+                <span class="stat-label">Distance:</span>
+                <span id="distance">0m</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Awards:</span>
+                <span id="awards">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Max Combo:</span>
+                <span id="maxCombo">0</span>
+            </div>
+        </div>
+        
+        <div class="music-control" onclick="toggleMusic()">
+            <span id="musicIcon">🎵</span>
+        </div>
+        
+        <div class="mobile-controls">
+            <div class="control-btn" ontouchstart="jump()">↑</div>
+            <div class="control-btn" ontouchstart="boost()">⚡</div>
+        </div>
+    </div>
+    
+    <!-- SPECIAL EFFECTS -->
+    <div class="screen-flash" id="screenFlash"></div>
+    
+    <!-- 3D CANVAS -->
+    <canvas id="gameCanvas"></canvas>
+    
+    <script>
+        // ==========================================
+        // THE ULTIMATE WINNING GAME ENGINE
+        // WITH MUSIC AND ALL FEATURES TO WIN!
+        // ==========================================
+        
+        let scene, camera, renderer;
+        let player, playerVelocity = 0;
+        let obstacles = [];
+        let particles = [];
+        let powerups = [];
+        let karma = 0;
+        let multiplier = 1;
+        let combo = 0;
+        let maxCombo = 0;
+        let distance = 0;
+        let awardsCollected = 0;
+        let currentDimension = 'all';
+        let gameRunning = false;
+        let clock = new THREE.Clock();
+        
+        // Music System
+        let musicContext = null;
+        let musicOscillator = null;
+        let musicGain = null;
+        let musicPlaying = false;
+        let bassOsc = null;
+        let bassGain = null;
+        
+        // Achievement System
+        const achievements = {
+            firstJump: { name: "First Flight!", unlocked: false },
+            combo10: { name: "Combo Master x10!", unlocked: false },
+            karma1000: { name: "1000 Karma!", unlocked: false },
+            award5: { name: "Award Collector!", unlocked: false },
+            dimension5: { name: "Dimension Hopper!", unlocked: false }
+        };
+        
+        // DIMENSION CONFIGURATIONS
+        const dimensions = {
+            'all': {
+                skyColor: 0x1a1a2e,
+                fogColor: 0x16213e,
+                lightColor: 0xffffff,
+                speed: 5,
+                gravity: -30,
+                theme: '🌍 Main Universe',
+                music: { tempo: 120, key: 'C' }
+            },
+            'gaming': {
+                skyColor: 0x2d0033,
+                fogColor: 0x4a0055,
+                lightColor: 0xff00ff,
+                speed: 7,
+                gravity: -25,
+                theme: '🎮 Gaming Realm',
+                music: { tempo: 140, key: 'E' }
+            },
+            'memes': {
+                skyColor: 0x003300,
+                fogColor: 0x005500,
+                lightColor: 0x00ff00,
+                speed: 10,
+                gravity: -35,
+                theme: '😂 Meme Dimension',
+                music: { tempo: 160, key: 'G' }
+            },
+            'science': {
+                skyColor: 0x000033,
+                fogColor: 0x000066,
+                lightColor: 0x00ffff,
+                speed: 4,
+                gravity: -20,
+                theme: '🔬 Science Space',
+                music: { tempo: 100, key: 'D' }
+            },
+            'aww': {
+                skyColor: 0x330022,
+                fogColor: 0x550033,
+                lightColor: 0xffaaff,
+                speed: 3,
+                gravity: -15,
+                theme: '🐾 Cute World',
+                music: { tempo: 90, key: 'F' }
+            }
+        };
+        
+        // MUSIC FREQUENCIES
+        const notes = {
+            'C': [261.63, 329.63, 392.00, 523.25],
+            'D': [293.66, 369.99, 440.00, 587.33],
+            'E': [329.63, 415.30, 493.88, 659.25],
+            'F': [349.23, 440.00, 523.25, 698.46],
+            'G': [392.00, 493.88, 587.33, 783.99]
+        };
+        
+        // INITIALIZE THE GAME
+        function initGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            
+            // Setup Three.js
+            setupThreeJS();
+            
+            // Create game world
+            createWorld();
+            
+            // Create player
+            createPlayer();
+            
+            // Setup controls
+            setupControls();
+            
+            // Start game systems
+            startGameSystems();
+            
+            // Initialize music
+            initMusic();
+            
+            // Start background music
+            startBackgroundMusic();
+            
+            // Initialize leaderboard
+            initLeaderboard();
+            
+            // Start animation
+            gameRunning = true;
+            animate();
+        }
+        
+        // INITIALIZE MUSIC SYSTEM
+        function initMusic() {
+            musicContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        // START BACKGROUND MUSIC (LIKE FLAPPYGOOSE)
+        function startBackgroundMusic() {
+            if (!musicContext) return;
+            
+            musicPlaying = true;
+            const dim = dimensions[currentDimension];
+            const tempo = dim.music.tempo;
+            const key = dim.music.key;
+            const noteList = notes[key];
+            
+            // Create main melody oscillator
+            musicOscillator = musicContext.createOscillator();
+            musicGain = musicContext.createGain();
+            
+            // Create bass oscillator
+            bassOsc = musicContext.createOscillator();
+            bassGain = musicContext.createGain();
+            
+            // Setup melody
+            musicOscillator.type = 'square';
+            musicOscillator.connect(musicGain);
+            musicGain.connect(musicContext.destination);
+            musicGain.gain.value = 0.05;
+            
+            // Setup bass
+            bassOsc.type = 'sawtooth';
+            bassOsc.frequency.value = noteList[0] / 2;
+            bassOsc.connect(bassGain);
+            bassGain.connect(musicContext.destination);
+            bassGain.gain.value = 0.03;
+            
+            // Create melody pattern
+            let noteIndex = 0;
+            const playNote = () => {
+                if (!musicPlaying) return;
+                
+                // Melody pattern (arpeggio)
+                const melodyPattern = [0, 2, 1, 3, 2, 1, 0, 1];
+                const currentNote = noteList[melodyPattern[noteIndex % melodyPattern.length]];
+                
+                musicOscillator.frequency.setValueAtTime(currentNote, musicContext.currentTime);
+                
+                // Bass pattern
+                if (noteIndex % 4 === 0) {
+                    bassOsc.frequency.setValueAtTime(noteList[0] / 2, musicContext.currentTime);
+                } else if (noteIndex % 4 === 2) {
+                    bassOsc.frequency.setValueAtTime(noteList[1] / 2, musicContext.currentTime);
+                }
+                
+                // Rhythm
+                musicGain.gain.setValueAtTime(0.05, musicContext.currentTime);
+                musicGain.gain.exponentialRampToValueAtTime(0.01, musicContext.currentTime + 0.1);
+                musicGain.gain.setValueAtTime(0.05, musicContext.currentTime + 0.15);
+                
+                noteIndex++;
+                
+                // Schedule next note based on tempo
+                setTimeout(playNote, 60000 / tempo / 2);
+            };
+            
+            musicOscillator.start();
+            bassOsc.start();
+            playNote();
+        }
+        
+        // TOGGLE MUSIC
+        function toggleMusic() {
+            const icon = document.getElementById('musicIcon');
+            if (musicPlaying) {
+                musicPlaying = false;
+                if (musicGain) musicGain.gain.value = 0;
+                if (bassGain) bassGain.gain.value = 0;
+                icon.textContent = '🔇';
+            } else {
+                musicPlaying = true;
+                if (musicGain) musicGain.gain.value = 0.05;
+                if (bassGain) bassGain.gain.value = 0.03;
+                icon.textContent = '🎵';
+            }
+        }
+        
+        // SETUP THREE.JS RENDERER
+        function setupThreeJS() {
+            const canvas = document.getElementById('gameCanvas');
+            
+            // Scene
+            scene = new THREE.Scene();
+            const dim = dimensions[currentDimension];
+            scene.fog = new THREE.Fog(dim.fogColor, 10, 100);
+            scene.background = new THREE.Color(dim.skyColor);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 5, 10);
+            camera.lookAt(0, 5, 0);
+            
+            // Renderer with max quality
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas,
+                antialias: true,
+                alpha: false,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // CREATE THE 3D WORLD
+        function createWorld() {
+            const dim = dimensions[currentDimension];
+            
+            // ADVANCED LIGHTING
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(dim.lightColor, 1);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.near = 0.1;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -20;
+            directionalLight.shadow.camera.right = 20;
+            directionalLight.shadow.camera.top = 20;
+            directionalLight.shadow.camera.bottom = -20;
+            scene.add(directionalLight);
+            
+            // Add moving point lights
+            const pointLight1 = new THREE.PointLight(0xFF4500, 0.5, 20);
+            pointLight1.position.set(0, 10, 0);
+            pointLight1.name = 'movingLight1';
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0xFFD700, 0.5, 20);
+            pointLight2.position.set(10, 5, -10);
+            pointLight2.name = 'movingLight2';
+            scene.add(pointLight2);
+            
+            // GROUND with texture pattern
+            const groundGeometry = new THREE.PlaneGeometry(50, 200);
+            const groundMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x222222,
+                shininess: 100,
+                specular: 0x111111,
+                emissive: 0x111111,
+                emissiveIntensity: 0.1
+            });
+            
+            for(let i = 0; i < 3; i++) {
+                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = -2;
+                ground.position.z = -i * 200;
+                ground.receiveShadow = true;
+                ground.name = 'ground';
+                scene.add(ground);
+                
+                // Add grid lines
+                const gridGeometry = new THREE.PlaneGeometry(50, 200, 10, 40);
+                const gridMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x444444,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const grid = new THREE.Mesh(gridGeometry, gridMaterial);
+                grid.rotation.x = -Math.PI / 2;
+                grid.position.y = -1.9;
+                grid.position.z = -i * 200;
+                grid.name = 'grid';
+                scene.add(grid);
+            }
+            
+            // ANIMATED SKYBOX STARS
+            const starGeometry = new THREE.BufferGeometry();
+            const starVertices = [];
+            const starColors = [];
+            for(let i = 0; i < 10000; i++) {
+                starVertices.push(
+                    Math.random() * 600 - 300,
+                    Math.random() * 600 - 300,
+                    Math.random() * 600 - 300
+                );
+                const color = Math.random();
+                starColors.push(color, color, color * 0.5);
+            }
+            starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
+            const starMaterial = new THREE.PointsMaterial({ 
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            const stars = new THREE.Points(starGeometry, starMaterial);
+            stars.name = 'stars';
+            scene.add(stars);
+            
+            // CREATE INITIAL OBSTACLES
+            for(let i = 0; i < 5; i++) {
+                createObstacle(-30 - i * 30);
+            }
+            
+            // Add floating Reddit icons in background
+            createBackgroundElements();
+        }
+        
+        // CREATE BACKGROUND ELEMENTS
+        function createBackgroundElements() {
+            // Floating upvotes and downvotes
+            for(let i = 0; i < 20; i++) {
+                const iconGeometry = new THREE.ConeGeometry(0.3, 0.6, 4);
+                const iconMaterial = new THREE.MeshPhongMaterial({
+                    color: Math.random() > 0.5 ? 0xFF4500 : 0x5865F2,
+                    transparent: true,
+                    opacity: 0.3,
+                    emissive: Math.random() > 0.5 ? 0xFF4500 : 0x5865F2,
+                    emissiveIntensity: 0.2
+                });
+                const icon = new THREE.Mesh(iconGeometry, iconMaterial);
+                icon.position.set(
+                    Math.random() * 100 - 50,
+                    Math.random() * 30 + 10,
+                    Math.random() * 200 - 100
+                );
+                icon.rotation.z = Math.random() > 0.5 ? 0 : Math.PI;
+                icon.name = 'backgroundIcon';
+                scene.add(icon);
+            }
+        }
+        
+        // CREATE PLAYER (ENHANCED REDDIT SNOO)
+        function createPlayer() {
+            const playerGroup = new THREE.Group();
+            
+            // Body with segments
+            const bodyGeometry = new THREE.SphereGeometry(1, 32, 32);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xFF4500,
+                emissive: 0xFF4500,
+                emissiveIntensity: 0.2,
+                shininess: 100,
+                specular: 0xFFFFFF
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            playerGroup.add(body);
+            
+            // Head
+            const headGeometry = new THREE.SphereGeometry(0.8, 32, 32);
+            const head = new THREE.Mesh(headGeometry, bodyMaterial);
+            head.position.y = 1.3;
+            head.castShadow = true;
+            playerGroup.add(head);
+            
+            // Eyes with glow
+            const eyeGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+            const eyeMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xffffff,
+                emissive: 0xffffff,
+                emissiveIntensity: 0.8,
+                shininess: 200
+            });
+            
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.3, 1.3, 0.6);
+            playerGroup.add(leftEye);
+            
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.3, 1.3, 0.6);
+            playerGroup.add(rightEye);
+            
+            // Animated pupils
+            const pupilGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+            const pupilMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            
+            const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            leftPupil.position.set(-0.3, 1.3, 0.75);
+            leftPupil.name = 'leftPupil';
+            playerGroup.add(leftPupil);
+            
+            const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            rightPupil.position.set(0.3, 1.3, 0.75);
+            rightPupil.name = 'rightPupil';
+            playerGroup.add(rightPupil);
+            
+            // Antenna with glow
+            const antennaGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1);
+            const antenna = new THREE.Mesh(antennaGeometry, bodyMaterial);
+            antenna.position.y = 2.2;
+            antenna.name = 'antenna';
+            playerGroup.add(antenna);
+            
+            const antennaBallGeometry = new THREE.SphereGeometry(0.15);
+            const antennaBallMaterial = new THREE.MeshPhongMaterial({
+                color: 0xFF4500,
+                emissive: 0xFFD700,
+                emissiveIntensity: 0.5
+            });
+            const antennaBall = new THREE.Mesh(antennaBallGeometry, antennaBallMaterial);
+            antennaBall.position.y = 2.7;
+            playerGroup.add(antennaBall);
+            
+            // Ears
+            const earGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const leftEar = new THREE.Mesh(earGeometry, bodyMaterial);
+            leftEar.position.set(-0.7, 1.5, 0);
+            leftEar.scale.set(1, 1.5, 0.5);
+            playerGroup.add(leftEar);
+            
+            const rightEar = new THREE.Mesh(earGeometry, bodyMaterial);
+            rightEar.position.set(0.7, 1.5, 0);
+            rightEar.scale.set(1, 1.5, 0.5);
+            playerGroup.add(rightEar);
+            
+            // Smile
+            const smileGeometry = new THREE.TorusGeometry(0.3, 0.05, 8, 16, Math.PI);
+            const smileMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const smile = new THREE.Mesh(smileGeometry, smileMaterial);
+            smile.position.set(0, 1.1, 0.7);
+            smile.rotation.z = Math.PI;
+            playerGroup.add(smile);
+            
+            // Add outer glow
+            const glowGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xFF4500,
+                transparent: true,
+                opacity: 0.2,
+                side: THREE.BackSide
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            glow.name = 'glow';
+            playerGroup.add(glow);
+            
+            // Add spinning aura
+            const auraGeometry = new THREE.TorusGeometry(2, 0.1, 8, 32);
+            const auraMaterial = new THREE.MeshBasicMaterial({
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.3
+            });
+            const aura = new THREE.Mesh(auraGeometry, auraMaterial);
+            aura.name = 'aura';
+            playerGroup.add(aura);
+            
+            // Position player
+            playerGroup.position.set(0, 5, 0);
+            
+            player = playerGroup;
+            scene.add(player);
+            
+            // Add particle trail
+            createPlayerTrail();
+        }
+        
+        // CREATE PLAYER TRAIL PARTICLES
+        function createPlayerTrail() {
+            const particleCount = 200;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+            
+            for(let i = 0; i < particleCount; i++) {
+                positions[i * 3] = 0;
+                positions[i * 3 + 1] = 0;
+                positions[i * 3 + 2] = 0;
+                
+                const color = i / particleCount;
+                colors[i * 3] = 1;
+                colors[i * 3 + 1] = color * 0.5;
+                colors[i * 3 + 2] = 0;
+                
+                sizes[i] = Math.random() * 0.5 + 0.1;
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.3,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            
+            const particleSystem = new THREE.Points(geometry, material);
+            particleSystem.name = 'trail';
+            scene.add(particleSystem);
+        }
+        
+        // CREATE OBSTACLES (ENHANCED REDDIT-THEMED)
+        function createObstacle(zPos) {
+            const gap = 8 + Math.random() * 4;
+            const gapY = Math.random() * 8 - 4;
+            
+            // Top obstacle (Downvote) with gradient
+            const topGeometry = new THREE.BoxGeometry(4, 20, 4);
+            const topMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x5865F2,
+                emissive: 0x5865F2,
+                emissiveIntensity: 0.1,
+                shininess: 100
+            });
+            const topObstacle = new THREE.Mesh(topGeometry, topMaterial);
+            topObstacle.position.set(0, 15 + gapY + gap/2, zPos);
+            topObstacle.castShadow = true;
+            topObstacle.name = 'obstacle';
+            scene.add(topObstacle);
+            
+            // Add downvote arrow on obstacle
+            const arrowGeometry = new THREE.ConeGeometry(0.5, 1, 4);
+            const arrowMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xFFFFFF,
+                emissive: 0xFFFFFF
+            });
+            const topArrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+            topArrow.position.set(0, 10 + gapY + gap/2, zPos + 2);
+            scene.add(topArrow);
+            
+            // Bottom obstacle (Downvote)
+            const bottomObstacle = new THREE.Mesh(topGeometry, topMaterial);
+            bottomObstacle.position.set(0, -5 + gapY - gap/2, zPos);
+            bottomObstacle.castShadow = true;
+            bottomObstacle.name = 'obstacle';
+            scene.add(bottomObstacle);
+            
+            const bottomArrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
+            bottomArrow.position.set(0, gapY - gap/2, zPos + 2);
+            bottomArrow.rotation.z = Math.PI;
+            scene.add(bottomArrow);
+            
+            // Upvote collectible (animated)
+            const upvoteGeometry = new THREE.ConeGeometry(0.5, 1, 4);
+            const upvoteMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xFF8C00,
+                emissive: 0xFF8C00,
+                emissiveIntensity: 0.8,
+                shininess: 200
+            });
+            const upvote = new THREE.Mesh(upvoteGeometry, upvoteMaterial);
+            upvote.position.set(0, gapY, zPos);
+            upvote.rotation.z = Math.PI;
+            upvote.name = 'upvote';
+            
+            // Add glow to upvote
+            const upvoteGlow = new THREE.PointLight(0xFF8C00, 0.5, 5);
+            upvoteGlow.position.copy(upvote.position);
+            scene.add(upvoteGlow);
+            
+            scene.add(upvote);
+            
+            // Gold award (rare) with special effects
+            if(Math.random() < 0.2) {
+                const awardGeometry = new THREE.OctahedronGeometry(0.5);
+                const awardMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0xFFD700,
+                    emissive: 0xFFD700,
+                    emissiveIntensity: 1,
+                    shininess: 300,
+                    specular: 0xFFFFFF
+                });
+                const award = new THREE.Mesh(awardGeometry, awardMaterial);
+                award.position.set(
+                    Math.random() * 4 - 2, 
+                    gapY + Math.random() * 4 - 2, 
+                    zPos
+                );
+                award.name = 'award';
+                
+                // Add golden glow
+                const awardGlow = new THREE.PointLight(0xFFD700, 1, 8);
+                awardGlow.position.copy(award.position);
+                scene.add(awardGlow);
+                
+                scene.add(award);
+            }
+            
+            // Platinum award (super rare)
+            if(Math.random() < 0.05) {
+                const platinumGeometry = new THREE.IcosahedronGeometry(0.6);
+                const platinumMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0xE5E4E2,
+                    emissive: 0x00FFFF,
+                    emissiveIntensity: 0.8,
+                    shininess: 500,
+                    specular: 0xFFFFFF
+                });
+                const platinum = new THREE.Mesh(platinumGeometry, platinumMaterial);
+                platinum.position.set(0, gapY + 5, zPos);
+                platinum.name = 'platinum';
+                
+                // Add cyan glow
+                const platinumGlow = new THREE.PointLight(0x00FFFF, 1.5, 10);
+                platinumGlow.position.copy(platinum.position);
+                scene.add(platinumGlow);
+                
+                scene.add(platinum);
+            }
+            
+            obstacles.push({
+                top: topObstacle,
+                bottom: bottomObstacle,
+                upvote: upvote,
+                topArrow: topArrow,
+                bottomArrow: bottomArrow,
+                passed: false,
+                gapY: gapY
+            });
+        }
+        
+        // SETUP CONTROLS
+        function setupControls() {
+            // Touch/Click to jump
+            document.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                jump();
+            }, { passive: false });
+            
+            document.addEventListener('click', jump);
+            
+            // Keyboard
+            document.addEventListener('keydown', (e) => {
+                if(e.code === 'Space') {
+                    e.preventDefault();
+                    jump();
+                }
+                if(e.code === 'KeyX') {
+                    boost();
+                }
+                if(e.code === 'KeyZ') {
+                    switchDimension();
+                }
+            });
+        }
+        
+        // JUMP FUNCTION
+        function jump() {
+            if(!gameRunning) return;
+            
+            const dim = dimensions[currentDimension];
+            playerVelocity = 15;
+            
+            // Check first jump achievement
+            if (!achievements.firstJump.unlocked) {
+                unlockAchievement('firstJump');
+            }
+            
+            // Effects
+            createJumpEffect();
+            playSound('jump');
+            
+            // Increase combo
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            
+            // Check combo achievement
+            if (combo >= 10 && !achievements.combo10.unlocked) {
+                unlockAchievement('combo10');
+            }
+            
+            updateCombo();
+        }
+        
+        // BOOST FUNCTION
+        function boost() {
+            if(!gameRunning || multiplier > 1) return;
+            
+            multiplier = 3;
+            setTimeout(() => {
+                multiplier = 1;
+                updateMultiplier();
+            }, 3000);
+            
+            updateMultiplier();
+            createBoostEffect();
+            playSound('boost');
+        }
+        
+        // CREATE JUMP EFFECT
+        function createJumpEffect() {
+            // Particle burst with colors
+            const particleCount = 50;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const velocities = [];
+            
+            for(let i = 0; i < particleCount; i++) {
+                positions[i * 3] = player.position.x;
+                positions[i * 3 + 1] = player.position.y;
+                positions[i * 3 + 2] = player.position.z;
+                
+                colors[i * 3] = 1;
+                colors[i * 3 + 1] = Math.random();
+                colors[i * 3 + 2] = 0;
+                
+                velocities.push({
+                    x: (Math.random() - 0.5) * 0.5,
+                    y: Math.random() * 0.5,
+                    z: (Math.random() - 0.5) * 0.5
+                });
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 1,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const burst = new THREE.Points(geometry, material);
+            burst.name = 'burst';
+            scene.add(burst);
+            
+            // Animate burst
+            const animateBurst = () => {
+                const positions = burst.geometry.attributes.position.array;
+                for(let i = 0; i < particleCount; i++) {
+                    positions[i * 3] += velocities[i].x;
+                    positions[i * 3 + 1] += velocities[i].y;
+                    positions[i * 3 + 2] += velocities[i].z;
+                    velocities[i].y -= 0.02;
+                }
+                burst.geometry.attributes.position.needsUpdate = true;
+                material.opacity -= 0.02;
+                
+                if(material.opacity > 0) {
+                    requestAnimationFrame(animateBurst);
+                } else {
+                    scene.remove(burst);
+                }
+            };
+            animateBurst();
+        }
+        
+        // CREATE BOOST EFFECT
+        function createBoostEffect() {
+            document.getElementById('screenFlash').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('screenFlash').classList.remove('active');
+            }, 300);
+            
+            // Add speed lines
+            const lineCount = 20;
+            for(let i = 0; i < lineCount; i++) {
+                const lineGeometry = new THREE.BufferGeometry();
+                const linePositions = new Float32Array(6);
+                
+                const angle = (i / lineCount) * Math.PI * 2;
+                const radius = 10;
+                
+                linePositions[0] = Math.cos(angle) * radius;
+                linePositions[1] = Math.sin(angle) * radius;
+                linePositions[2] = 5;
+                
+                linePositions[3] = Math.cos(angle) * radius;
+                linePositions[4] = Math.sin(angle) * radius;
+                linePositions[5] = -20;
+                
+                lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+                
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: 0xFFD700,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                line.name = 'speedLine';
+                scene.add(line);
+                
+                // Animate and remove
+                setTimeout(() => {
+                    scene.remove(line);
+                }, 3000);
+            }
+        }
+        
+        // INITIALIZE LEADERBOARD
+        function initLeaderboard() {
+            const leaderboard = [
+                { name: 'u/RedditLegend', score: 50000 },
+                { name: 'u/KarmaMaster', score: 45000 },
+                { name: 'u/FlappyPro', score: 40000 },
+                { name: 'u/SnooKing', score: 35000 },
+                { name: 'YOU', score: 0, isPlayer: true }
+            ];
+            
+            updateLeaderboardDisplay(leaderboard);
+        }
+        
+        // UPDATE LEADERBOARD DISPLAY
+        function updateLeaderboardDisplay(leaderboard) {
+            const content = document.getElementById('leaderboardContent');
+            content.innerHTML = '';
+            
+            leaderboard.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = entry.isPlayer ? 'leaderboard-item you' : 'leaderboard-item';
+                item.innerHTML = `
+                    <span>#${index + 1} ${entry.name}</span>
+                    <span>${entry.score}</span>
+                `;
+                content.appendChild(item);
+            });
+        }
+        
+        // START GAME SYSTEMS
+        function startGameSystems() {
+            // Start Reddit feed simulation
+            setInterval(() => {
+                if(gameRunning) {
+                    addRedditFeedItem();
+                }
+            }, 2000);
+            
+            // Update stats
+            setInterval(() => {
+                if(gameRunning) {
+                    distance += 1;
+                    document.getElementById('distance').textContent = distance + 'm';
+                    document.getElementById('maxCombo').textContent = maxCombo;
+                    document.getElementById('awards').textContent = awardsCollected;
+                }
+            }, 100);
+            
+            // Random events
+            setInterval(() => {
+                if(Math.random() < 0.1 && gameRunning) {
+                    showNotification('⚠️ DIMENSION SHIFT INCOMING!');
+                    setTimeout(() => {
+                        switchDimension();
+                    }, 2000);
+                }
+            }, 15000);
+        }
+        
+        // ADD REDDIT FEED ITEM
+        function addRedditFeedItem() {
+            const feedContent = document.getElementById('feedContent');
+            const messages = [
+                `🔥 u/Player${Math.floor(Math.random()*999)} scored ${Math.floor(Math.random()*10000)}!`,
+                '💎 Diamond hands achievement unlocked!',
+                `🚀 New record on r/${currentDimension}!`,
+                '⬆️ 1000 upvotes collected!',
+                '🏆 Legendary run in progress!',
+                `😱 Insane combo x${Math.floor(Math.random()*100)}!`,
+                '🎮 Pro gamer move spotted!',
+                '💪 Never give up attitude!',
+                '✨ Perfect run achieved!',
+                '🌟 Reddit Gold earned!',
+                '📈 Karma stonks rising!',
+                '🦍 Apes together strong!',
+                '💯 100% completion!',
+                '🎯 Precision jump!',
+                '⚡ Speed run mode activated!'
+            ];
+            
+            const item = document.createElement('div');
+            item.className = 'feed-item';
+            item.textContent = messages[Math.floor(Math.random() * messages.length)];
+            
+            feedContent.insertBefore(item, feedContent.firstChild);
+            
+            // Limit feed items
+            while(feedContent.children.length > 5) {
+                feedContent.removeChild(feedContent.lastChild);
+            }
+        }
+        
+        // UNLOCK ACHIEVEMENT
+        function unlockAchievement(achievementKey) {
+            const achievement = achievements[achievementKey];
+            if (!achievement.unlocked) {
+                achievement.unlocked = true;
+                showAchievement(achievement.name);
+                playSound('achievement');
+            }
+        }
+        
+        // SHOW ACHIEVEMENT
+        function showAchievement(name) {
+            const achievementEl = document.getElementById('achievement');
+            achievementEl.textContent = '🏆 ' + name;
+            achievementEl.classList.add('show');
+            
+            setTimeout(() => {
+                achievementEl.classList.remove('show');
+            }, 3000);
+        }
+        
+        // SWITCH DIMENSION
+        function switchDimension() {
+            const dims = Object.keys(dimensions);
+            let index = dims.indexOf(currentDimension);
+            index = (index + 1) % dims.length;
+            currentDimension = dims[index];
+            
+            const dim = dimensions[currentDimension];
+            scene.fog.color = new THREE.Color(dim.fogColor);
+            scene.background = new THREE.Color(dim.skyColor);
+            
+            document.getElementById('dimensionName').textContent = `r/${currentDimension}`;
+            showNotification(`📍 WARPED TO ${dim.theme}`);
+            
+            // Change lighting
+            scene.traverse((child) => {
+                if(child.type === 'DirectionalLight') {
+                    child.color = new THREE.Color(dim.lightColor);
+                }
+            });
+            
+            // Change music tempo
+            if (musicPlaying) {
+                stopBackgroundMusic();
+                startBackgroundMusic();
+            }
+            
+            // Check dimension achievement
+            const dimensionsVisited = dims.filter(d => d === currentDimension).length;
+            if (dimensionsVisited >= 5 && !achievements.dimension5.unlocked) {
+                unlockAchievement('dimension5');
+            }
+        }
+        
+        // STOP BACKGROUND MUSIC
+        function stopBackgroundMusic() {
+            if (musicOscillator) {
+                musicOscillator.stop();
+                musicOscillator = null;
+            }
+            if (bassOsc) {
+                bassOsc.stop();
+                bassOsc = null;
+            }
+        }
+        
+        // UPDATE COMBO
+        function updateCombo() {
+            const comboFill = document.getElementById('comboFill');
+            const comboText = document.getElementById('comboText');
+            
+            comboFill.style.width = Math.min(combo * 5, 100) + '%';
+            comboText.textContent = `COMBO: ${combo}`;
+            
+            // Epic combo colors
+            if(combo > 20) {
+                comboFill.style.background = 'linear-gradient(90deg, #FF0000, #FF4500, #FFD700, #00FF00, #00FFFF, #FF00FF)';
+                comboFill.style.animation = 'rainbow 2s linear infinite';
+            } else if(combo > 10) {
+                comboFill.style.background = 'linear-gradient(90deg, #FF4500, #FFD700, #00FF00, #FFD700)';
+            }
+        }
+        
+        // UPDATE MULTIPLIER
+        function updateMultiplier() {
+            const multElement = document.getElementById('multiplier');
+            multElement.textContent = multiplier.toFixed(1) + 'x';
+            
+            if(multiplier > 1) {
+                multElement.classList.add('mega');
+            } else {
+                multElement.classList.remove('mega');
+            }
+        }
+        
+        // SHOW NOTIFICATION
+        function showNotification(text) {
+            const notif = document.createElement('div');
+            notif.className = 'powerup-popup';
+            notif.textContent = text;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.remove();
+            }, 1500);
+        }
+        
+        // PLAY SOUND (Enhanced procedural audio)
+        function playSound(type) {
+            if (!musicContext) return;
+            
+            switch(type) {
+                case 'jump':
+                    const jumpOsc = musicContext.createOscillator();
+                    const jumpGain = musicContext.createGain();
+                    jumpOsc.connect(jumpGain);
+                    jumpGain.connect(musicContext.destination);
+                    jumpOsc.type = 'sine';
+                    jumpOsc.frequency.setValueAtTime(400, musicContext.currentTime);
+                    jumpOsc.frequency.exponentialRampToValueAtTime(800, musicContext.currentTime + 0.1);
+                    jumpGain.gain.setValueAtTime(0.1, musicContext.currentTime);
+                    jumpGain.gain.exponentialRampToValueAtTime(0.01, musicContext.currentTime + 0.2);
+                    jumpOsc.start();
+                    jumpOsc.stop(musicContext.currentTime + 0.2);
+                    break;
+                    
+                case 'collect':
+                    const collectOsc = musicContext.createOscillator();
+                    const collectGain = musicContext.createGain();
+                    collectOsc.connect(collectGain);
+                    collectGain.connect(musicContext.destination);
+                    collectOsc.type = 'sine';
+                    
+                    // Play arpeggio
+                    const collectNotes = [523, 659, 784, 1047];
+                    collectNotes.forEach((freq, i) => {
+                        setTimeout(() => {
+                            collectOsc.frequency.setValueAtTime(freq, musicContext.currentTime);
+                        }, i * 50);
+                    });
+                    
+                    collectGain.gain.setValueAtTime(0.15, musicContext.currentTime);
+                    collectGain.gain.exponentialRampToValueAtTime(0.01, musicContext.currentTime + 0.4);
+                    collectOsc.start();
+                    collectOsc.stop(musicContext.currentTime + 0.4);
+                    break;
+                    
+                case 'boost':
+                    // Power up sound
+                    for(let i = 0; i < 5; i++) {
+                        setTimeout(() => {
+                            const boostOsc = musicContext.createOscillator();
+                            const boostGain = musicContext.createGain();
+                            boostOsc.connect(boostGain);
+                            boostGain.connect(musicContext.destination);
+                            boostOsc.type = 'sawtooth';
+                            boostOsc.frequency.value = 600 + i * 150;
+                            boostGain.gain.setValueAtTime(0.08, musicContext.currentTime);
+                            boostGain.gain.exponentialRampToValueAtTime(0.01, musicContext.currentTime + 0.3);
+                            boostOsc.start();
+                            boostOsc.stop(musicContext.currentTime + 0.3);
+                        }, i * 40);
+                    }
+                    break;
+                    
+                case 'achievement':
+                    // Triumphant fanfare
+                    const fanfareNotes = [523, 659, 784, 1047, 784, 659, 523];
+                    fanfareNotes.forEach((freq, i) => {
+                        setTimeout(() => {
+                            const achOsc = musicContext.createOscillator();
+                            const achGain = musicContext.createGain();
+                            achOsc.connect(achGain);
+                            achGain.connect(musicContext.destination);
+                            achOsc.type = 'square';
+                            achOsc.frequency.value = freq;
+                            achGain.gain.setValueAtTime(0.1, musicContext.currentTime);
+                            achGain.gain.exponentialRampToValueAtTime(0.01, musicContext.currentTime + 0.2);
+                            achOsc.start();
+                            achOsc.stop(musicContext.currentTime + 0.2);
+                        }, i * 100);
+                    });
+                    break;
+                    
+                case 'crash':
+                    // Game over sound
+                    const crashOsc = musicContext.createOscillator();
+                    const crashGain = musicContext.createGain();
+                    crashOsc.connect(crashGain);
+                    crashGain.connect(musicContext.destination);
+                    crashOsc.type = 'sawtooth';
+                    crashOsc.frequency.setValueAtTime(400, musicContext.currentTime);
+                    crashOsc.frequency.exponentialRampToValueAtTime(50, musicContext.currentTime + 0.5);
+                    crashGain.gain.setValueAtTime(0.2, musicContext.currentTime);
+                    crashGain.gain.exponentialRampToValueAtTime(0.01, musicContext.currentTime + 0.5);
+                    crashOsc.start();
+                    crashOsc.stop(musicContext.currentTime + 0.5);
+                    break;
+            }
+        }
+        
+        // MAIN ANIMATION LOOP
+        function animate() {
+            if(!gameRunning) return;
+            
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            const dim = dimensions[currentDimension];
+            
+            // Update player physics
+            playerVelocity += dim.gravity * delta;
+            player.position.y += playerVelocity * delta;
+            
+            // Rotate player based on velocity
+            player.rotation.z = playerVelocity * 0.01;
+            player.rotation.y += 0.02;
+            
+            // Animate player parts
+            const antenna = player.getChildByName('antenna');
+            if(antenna) {
+                antenna.rotation.z = Math.sin(Date.now() * 0.003) * 0.3;
+            }
+            
+            const aura = player.getChildByName('aura');
+            if(aura) {
+                aura.rotation.x += 0.05;
+                aura.rotation.y += 0.03;
+                aura.scale.x = 1 + Math.sin(Date.now() * 0.002) * 0.1;
+                aura.scale.y = 1 + Math.sin(Date.now() * 0.002) * 0.1;
+            }
+            
+            const glow = player.getChildByName('glow');
+            if(glow) {
+                glow.material.opacity = 0.2 + Math.sin(Date.now() * 0.003) * 0.1;
+            }
+            
+            // Animate eyes (look at obstacles)
+            const leftPupil = player.getChildByName('leftPupil');
+            const rightPupil = player.getChildByName('rightPupil');
+            if(leftPupil && rightPupil && obstacles.length > 0) {
+                const lookTarget = obstacles[0].gapY;
+                const lookOffset = (lookTarget - player.position.y) * 0.01;
+                leftPupil.position.y = 1.3 + Math.max(-0.05, Math.min(0.05, lookOffset));
+                rightPupil.position.y = 1.3 + Math.max(-0.05, Math.min(0.05, lookOffset));
+            }
+            
+            // Update camera to follow player smoothly
+            camera.position.y += (player.position.y - camera.position.y) * 0.1;
+            
+            // Camera shake on boost
+            if(multiplier > 1) {
+                camera.position.x = Math.sin(Date.now() * 0.01) * 0.2;
+                camera.rotation.z = Math.sin(Date.now() * 0.01) * 0.01;
+            } else {
+                camera.position.x = 0;
+                camera.rotation.z = 0;
+            }
+            
+            // Update obstacles
+            obstacles.forEach((obstacle, index) => {
+                obstacle.top.position.z += dim.speed * delta * multiplier;
+                obstacle.bottom.position.z += dim.speed * delta * multiplier;
+                obstacle.upvote.position.z += dim.speed * delta * multiplier;
+                obstacle.topArrow.position.z += dim.speed * delta * multiplier;
+                obstacle.bottomArrow.position.z += dim.speed * delta * multiplier;
+                
+                // Animate upvote
+                obstacle.upvote.rotation.y += 0.05;
+                obstacle.upvote.position.y = obstacle.gapY + Math.sin(Date.now() * 0.003 + index) * 0.2;
+                
+                // Check if passed
+                if(!obstacle.passed && obstacle.top.position.z > player.position.z) {
+                    obstacle.passed = true;
+                    karma += Math.floor(10 * multiplier);
+                    updateKarma();
+                }
+                
+                // Check collision with upvote
+                const upvoteDist = player.position.distanceTo(obstacle.upvote.position);
+                if(upvoteDist < 2) {
+                    scene.remove(obstacle.upvote);
+                    obstacle.upvote.position.set(9999, 9999, 9999);
+                    karma += Math.floor(50 * multiplier);
+                    updateKarma();
+                    playSound('collect');
+                    showNotification('+50 KARMA!');
+                }
+                
+                // Check collision with obstacles
+                if(Math.abs(player.position.z - obstacle.top.position.z) < 2) {
+                    if(player.position.y > obstacle.top.position.y - 10 ||
+                       player.position.y < obstacle.bottom.position.y + 10) {
+                        gameOver();
+                    }
+                }
+                
+                // Remove old obstacles
+                if(obstacle.top.position.z > 20) {
+                    scene.remove(obstacle.top);
+                    scene.remove(obstacle.bottom);
+                    scene.remove(obstacle.upvote);
+                    scene.remove(obstacle.topArrow);
+                    scene.remove(obstacle.bottomArrow);
+                    obstacles.splice(index, 1);
+                    
+                    // Create new obstacle
+                    createObstacle(-100);
+                }
+            });
+            
+            // Check for awards
+            scene.traverse((child) => {
+                if(child.name === 'award') {
+                    child.rotation.x += 0.05;
+                    child.rotation.y += 0.05;
+                    child.position.y += Math.sin(Date.now() * 0.003) * 0.02;
+                    
+                    const dist = player.position.distanceTo(child.position);
+                    if(dist < 2) {
+                        scene.remove(child);
+                        karma += Math.floor(500 * multiplier);
+                        awardsCollected++;
+                        updateKarma();
+                        playSound('boost');
+                        showNotification('🏆 GOLD AWARD +500!');
+                        createBoostEffect();
+                        
+                        // Check award achievement
+                        if(awardsCollected >= 5 && !achievements.award5.unlocked) {
+                            unlockAchievement('award5');
+                        }
+                    }
+                }
+                
+                if(child.name === 'platinum') {
+                    child.rotation.x += 0.03;
+                    child.rotation.y += 0.07;
+                    child.position.y += Math.sin(Date.now() * 0.002) * 0.03;
+                    
+                    const dist = player.position.distanceTo(child.position);
+                    if(dist < 2) {
+                        scene.remove(child);
+                        karma += Math.floor(2000 * multiplier);
+                        awardsCollected += 5;
+                        updateKarma();
+                        playSound('achievement');
+                        showNotification('💎 PLATINUM +2000!!!');
+                        multiplier = 5;
+                        setTimeout(() => {
+                            multiplier = 1;
+                            updateMultiplier();
+                        }, 5000);
+                        updateMultiplier();
+                    }
+                }
+            });
+            
+            // Update ground and grid
+            scene.traverse((child) => {
+                if(child.name === 'ground' || child.name === 'grid') {
+                    child.position.z += dim.speed * delta * multiplier;
+                    if(child.position.z > 100) {
+                        child.position.z -= 600;
+                    }
+                }
+                
+                // Animate background icons
+                if(child.name === 'backgroundIcon') {
+                    child.position.z += dim.speed * delta * 0.5;
+                    child.rotation.y += 0.01;
+                    if(child.position.z > 100) {
+                        child.position.z = -100;
+                        child.position.x = Math.random() * 100 - 50;
+                        child.position.y = Math.random() * 30 + 10;
+                    }
+                }
+                
+                // Animate stars
+                if(child.name === 'stars') {
+                    child.rotation.y += 0.0001;
+                }
+                
+                // Animate moving lights
+                if(child.name === 'movingLight1') {
+                    child.position.x = Math.sin(Date.now() * 0.001) * 10;
+                    child.position.z = Math.cos(Date.now() * 0.001) * 10;
+                }
+                if(child.name === 'movingLight2') {
+                    child.position.x = Math.cos(Date.now() * 0.001) * 10;
+                    child.position.z = Math.sin(Date.now() * 0.001) * 10;
+                }
+            });
+            
+            // Update trail particles
+            const trail = scene.getObjectByName('trail');
+            if(trail) {
+                const positions = trail.geometry.attributes.position.array;
+                for(let i = positions.length - 3; i >= 3; i -= 3) {
+                    positions[i] = positions[i - 3];
+                    positions[i + 1] = positions[i - 2];
+                    positions[i + 2] = positions[i - 1];
+                }
+                positions[0] = player.position.x + (Math.random() - 0.5) * 0.5;
+                positions[1] = player.position.y + (Math.random() - 0.5) * 0.5;
+                positions[2] = player.position.z;
+                trail.geometry.attributes.position.needsUpdate = true;
+                
+                // Fade trail
+                trail.material.opacity = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
+            }
+            
+            // Check boundaries
+            if(player.position.y < -2 || player.position.y > 25) {
+                gameOver();
+            }
+            
+            // Decrease combo over time
+            if(combo > 0 && Date.now() % 60 === 0) {
+                combo = Math.max(0, combo - 1);
+                updateCombo();
+            }
+            
+            // Check karma achievement
+            if(karma >= 1000 && !achievements.karma1000.unlocked) {
+                unlockAchievement('karma1000');
+            }
+            
+            // Update leaderboard
+            if(karma > 0 && Date.now() % 100 === 0) {
+                const leaderboard = [
+                    { name: 'u/RedditLegend', score: 50000 },
+                    { name: 'u/KarmaMaster', score: 45000 },
+                    { name: 'u/FlappyPro', score: 40000 },
+                    { name: 'u/SnooKing', score: 35000 },
+                    { name: 'YOU', score: karma, isPlayer: true }
+                ];
+                leaderboard.sort((a, b) => b.score - a.score);
+                updateLeaderboardDisplay(leaderboard);
+            }
+            
+            // Render
+            renderer.render(scene, camera);
+        }
+        
+        // UPDATE KARMA DISPLAY
+        function updateKarma() {
+            const scoreEl = document.getElementById('karmaScore');
+            scoreEl.textContent = Math.floor(karma);
+            
+            // Animate score
+            scoreEl.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                scoreEl.style.transform = 'scale(1)';
+            }, 200);
+        }
+        
+        // GAME OVER
+        function gameOver() {
+            gameRunning = false;
+            playSound('crash');
+            stopBackgroundMusic();
+            
+            // Final stats
+            const finalMessage = `
+🎮 GAME OVER! 🎮
+
+Final Karma: ${Math.floor(karma)}
+Best Combo: ${maxCombo}
+Distance: ${distance}m
+Awards: ${awardsCollected}
+Dimension: r/${currentDimension}
+
+${karma > 10000 ? '🏆 LEGENDARY RUN!' : karma > 5000 ? '⭐ GREAT JOB!' : karma > 1000 ? '👍 GOOD TRY!' : '💪 KEEP PRACTICING!'}
+
+Tap OK to play again!
+            `;
+            
+            setTimeout(() => {
+                if(confirm(finalMessage)) {
+                    location.reload();
+                }
+            }, 500);
+        }
+    </script>
+</body>
+</html>
+                   
